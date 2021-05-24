@@ -1,2 +1,2 @@
-# A..R.A.M-Booster
+# A.R.A.M-Booster
 Active ARAM BOOST without RP.
