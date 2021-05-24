@@ -1,0 +1,120 @@
+#cs
+	[CWAutCompFileInfo]
+	Company=KLH
+	Copyright=
+	Description=Aram boost
+	Version=1.1.1.1
+	ProductName=
+	ProductVersion=1.1.1.1
+#ce
+#RequireAdmin
+#include <Constants.au3>
+#include <String.au3>
+#include "_HttpRequest.au3"
+#include <ButtonConstants.au3>
+#include <GUIConstantsEx.au3>
+#include <StaticConstants.au3>
+#include <_Json.au3>
+
+Opt("TrayMenuMode", 1)
+$Form1_1 = GUICreate("A.R.A.M - KLH", 440, 250, 192, 124)
+$Label1 = GUICtrlCreateLabel("A.R.A.M Skin boost", 16, 8, 259, 43)
+GUICtrlSetFont(-1, 24, 800, 0, "Calibri")
+GUICtrlSetColor(-1, 0xFF0000)
+$Button1 = GUICtrlCreateButton("Boost", -24, 168, 467, 49)
+$Label2 = GUICtrlCreateLabel("Player", 16, 64, 180, 60)
+GUICtrlSetFont(-1, 15, 400, 0)
+$Checkbox1 = GUICtrlCreateCheckbox("Auto ready", 296, 136, 121, 17)
+GUICtrlSetFont(-1, 14, 400, 0)
+$Label3 = GUICtrlCreateLabel("Game not running !!", 8, 224, 97, 17)
+GUICtrlSetColor(-1, 0xFF0000)
+GUICtrlSetState($Label3,32)
+TraySetIcon("", -1)
+TraySetClick("1")
+$tray = TrayCreateItem("Exit")
+GUISetState(@SW_SHOW)
+#EndRegion ### END Koda GUI section ###
+
+const $sHost = 'https://127.0.0.1'
+const $sProc = 'LeagueClientUx.exe'
+$iPID = ''
+Global $sPort
+checkGame()
+
+
+
+While 1
+	$nMsg = GUIGetMsg()
+	If GUICtrlRead($Label2)="Player" Then
+		checkGame()
+		Sleep(70)
+	EndIf
+	Switch $nMsg
+		Case $GUI_EVENT_CLOSE
+			Exit
+		Case $Button1
+			skinBoost()
+
+	EndSwitch
+	if TrayGetMsg() = $tray Then
+			Exit
+		EndIf
+
+WEnd
+
+func getAPI($n)
+	local $apiString = 'method=call&args=["","teambuilder-draft","activateBattleBoostV1",""]'
+	static $aAPIs[] = [ _
+        "/lol-chat/v1/me",    _
+        "/lol-matchmaking/v1/ready-check",              _
+        "/lol-matchmaking/v1/ready-check/accept",       _
+        "/lol-login/v1/session/invoke?destination=lcdsServiceProxy&" & $apiString,                 _
+        "/lol-champ-select/v1/session/actions"          _
+    ];
+    return ($sHost & ':' & $sPort & $aAPIs[$n])
+endFunc
+Func getName()
+	local $tmp = _HttpRequest(2, getAPI(0));
+	local $json = Json_Decode($tmp);
+	return Json_Get($json, '["name"]');
+EndFunc
+
+
+Func skinBoost()
+	local $tmp = _HttpRequest(2, getAPI(0));
+	local $json = Json_Decode($tmp);
+	If Json_Get($json, '["lol"].gameStatus') <> "championSelect" Then
+		MsgBox(16,"A.R.A.M","Chỉ sử dụng khi ở màn hình chọn tướng",5)
+	Else
+		$sRes = _HttpRequest(2, getAPI(3), '', '', '', '', 'POST')
+		if StringInStr($sRes, '{"body"') <> 0 Then
+			TrayTip("A.R.A.M - KLH","Boosted ! Enjoy your game : ) ",5)
+		else
+			TrayTip("A.R.A.M - KLH","Fail to boost  :(" ,5)
+		endIf
+	endIf
+EndFunc
+
+Func checkGame()
+	if ProcessExists("LeagueClient.exe") then
+	Global $iPID = ProcessExists($sProc);
+	Sleep(2000)
+	startT()
+	Else
+	GUICtrlSetState($Label3,16)
+	EndIf
+EndFunc
+
+Func startT()
+Global $sDir = StringTrimRight(_WinAPI_GetProcessFileName($iPID), StringLen($sProc));
+; Read the lockfile and get port + password
+Global $sLockfile = FileReadLine($sDir & 'lockfile');
+Global $sTokens = StringSplit($sLockfile, ':', 2);
+Global $sPort = $sTokens[2];
+Global $sPass = $sTokens[3];
+_HttpRequest_SetAuthorization("riot", $sPass);
+GUICtrlSetData($Label2, GUICtrlRead($Label2)& " : "&getName())
+GUICtrlSetState($Label3,32)
+EndFunc
+
+
