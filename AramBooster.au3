@@ -1,10 +1,9 @@
 #cs
 	[CWAutCompFileInfo]
 	Company=KLH
-	Copyright=
+	Copyright= 0x4b697a
 	Description=Aram boost
 	Version=1.1.1.1
-	ProductName=
 	ProductVersion=1.1.1.1
 #ce
 #RequireAdmin
@@ -17,18 +16,19 @@
 #include <_Json.au3>
 
 Opt("TrayMenuMode", 1)
-$Form1_1 = GUICreate("A.R.A.M - KLH", 440, 250, 192, 124)
+$ARAM = GUICreate("A.R.A.M - KLH", 440, 250, 192, 124)
 $Label1 = GUICtrlCreateLabel("A.R.A.M Skin boost", 16, 8, 259, 43)
 GUICtrlSetFont(-1, 24, 800, 0, "Calibri")
 GUICtrlSetColor(-1, 0xFF0000)
-$Button1 = GUICtrlCreateButton("Boost", -24, 168, 467, 49)
-$Label2 = GUICtrlCreateLabel("Player", 16, 64, 180, 60)
+$btnBoost = GUICtrlCreateButton("Boost", -24, 168, 467, 49)
+$LabelName = GUICtrlCreateLabel("Player", 16, 64, 180, 60)
 GUICtrlSetFont(-1, 15, 400, 0)
 $Checkbox1 = GUICtrlCreateCheckbox("Auto ready", 296, 136, 121, 17)
 GUICtrlSetFont(-1, 14, 400, 0)
-$Label3 = GUICtrlCreateLabel("Game not running !!", 8, 224, 97, 17)
+$Labelstt = GUICtrlCreateLabel("Game not running !!", 8, 224, 97, 17)
 GUICtrlSetColor(-1, 0xFF0000)
-GUICtrlSetState($Label3,32)
+GUICtrlSetState($Labelstt,32)
+GUICtrlSetState($Checkbox1,32)
 TraySetIcon("", -1)
 TraySetClick("1")
 $tray = TrayCreateItem("Exit")
@@ -42,19 +42,17 @@ Global $sPort
 checkGame()
 
 
-
 While 1
 	$nMsg = GUIGetMsg()
-	If GUICtrlRead($Label2)="Player" Then
+	If GUICtrlRead($LabelName)="Player" Then
 		checkGame()
 		Sleep(70)
 	EndIf
 	Switch $nMsg
 		Case $GUI_EVENT_CLOSE
 			Exit
-		Case $Button1
+		Case $btnBoost
 			skinBoost()
-
 	EndSwitch
 	if TrayGetMsg() = $tray Then
 			Exit
@@ -62,6 +60,7 @@ While 1
 
 WEnd
 
+;Thanks to Nomi
 func getAPI($n)
 	local $apiString = 'method=call&args=["","teambuilder-draft","activateBattleBoostV1",""]'
 	static $aAPIs[] = [ _
@@ -73,7 +72,9 @@ func getAPI($n)
     ];
     return ($sHost & ':' & $sPort & $aAPIs[$n])
 endFunc
-Func getName()
+
+;Lấy tên ingame
+Func getName() 
 	local $tmp = _HttpRequest(2, getAPI(0));
 	local $json = Json_Decode($tmp);
 	return Json_Get($json, '["name"]');
@@ -97,24 +98,24 @@ EndFunc
 
 Func checkGame()
 	if ProcessExists("LeagueClient.exe") then
+	GUICtrlSetState($Labelstt,32)
 	Global $iPID = ProcessExists($sProc);
-	Sleep(2000)
-	startT()
+	Sleep(1200)
+		If WinActive("League of Legends") Then
+			startT()
+		EndIf
 	Else
-	GUICtrlSetState($Label3,16)
+		GUICtrlSetState($Labelstt,16)
 	EndIf
 EndFunc
 
 Func startT()
-Global $sDir = StringTrimRight(_WinAPI_GetProcessFileName($iPID), StringLen($sProc));
-; Read the lockfile and get port + password
-Global $sLockfile = FileReadLine($sDir & 'lockfile');
-Global $sTokens = StringSplit($sLockfile, ':', 2);
-Global $sPort = $sTokens[2];
-Global $sPass = $sTokens[3];
-_HttpRequest_SetAuthorization("riot", $sPass);
-GUICtrlSetData($Label2, GUICtrlRead($Label2)& " : "&getName())
-GUICtrlSetState($Label3,32)
+	Global $sDir = StringTrimRight(_WinAPI_GetProcessFileName($iPID), StringLen($sProc));
+	; Read the lockfile and get port + password
+	Global $sLockfile = FileReadLine($sDir & 'lockfile');
+	Global $sTokens = StringSplit($sLockfile, ':', 2);
+	Global $sPort = $sTokens[2];
+	Global $sPass = $sTokens[3];
+	_HttpRequest_SetAuthorization("riot", $sPass);
+	GUICtrlSetData($LabelName, GUICtrlRead($LabelName)& " : "&getName())
 EndFunc
-
-
